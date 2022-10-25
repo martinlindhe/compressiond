@@ -1,0 +1,50 @@
+env:
+  - CGO_ENABLED=0
+
+builds:
+  - id: compressionid
+    main: ./cmd/compressionid
+    binary: compressionid
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - 386
+      - amd64
+    ignore:
+      - goos: darwin
+        goarch: 386
+
+  - id: compressionid-packer
+    main: ./cmd/compressionid-packer
+    binary: compressionid-packer
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - 386
+      - amd64
+    ignore:
+      - goos: darwin
+        goarch: 386
+
+archives:
+  - id: all
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}"
+changelog:
+  sort: asc
