@@ -24,7 +24,7 @@ type CompressionKind int
 
 const (
 	ZLib CompressionKind = iota
-	Deflate
+	Flate
 	LZO1X
 	LZ4
 	LZW_LSB8 // LSB, 8-bit
@@ -34,8 +34,8 @@ func (k CompressionKind) String() string {
 	switch k {
 	case ZLib:
 		return "ZLib"
-	case Deflate:
-		return "Deflate"
+	case Flate:
+		return "Flate"
 	case LZO1X:
 		return "LZO1x"
 	case LZ4:
@@ -68,12 +68,12 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 		log.Error().Err(err).Msgf("ZLIB reading failed")
 	}
 
-	// DEFLATE
+	// FLATE
 	reader = flate.NewReader(bytes.NewReader(data))
 	defer reader.Close()
 	_, err = io.Copy(&b, reader)
 	if err == nil {
-		return Deflate, b.Bytes(), nil
+		return Flate, b.Bytes(), nil
 	}
 	log.Error().Err(err).Msgf("DEFLATE extraction failed")
 
