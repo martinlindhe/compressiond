@@ -13,6 +13,7 @@ import (
 	"github.com/rasky/go-lzo"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/ulikunitz/xz/lzma"
 
 	lz77b "github.com/owencmiller/LZ77"
 	lz77a "github.com/writingtoole/pdb/lz77"
@@ -28,6 +29,7 @@ type CompressionKind int
 const (
 	ZLib CompressionKind = iota
 	Flate
+	Lzma
 	Lzo1X
 	Lz4
 	Lz77a    // Lz77, variant #a
@@ -42,6 +44,8 @@ func (k CompressionKind) String() string {
 		return "ZLib"
 	case Flate:
 		return "Flate"
+	case Lzma:
+		return "Lzma"
 	case Lzo1X:
 		return "Lzo1x"
 	case Lz4:
@@ -103,6 +107,18 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 		return Lz4, b.Bytes(), nil
 	}
 	log.Error().Err(err).Msgf("Lz4 extraction failed")
+
+	// LZMA
+	lzmaDec, err := lzma.NewReader(bytes.NewReader(data))
+	if err == nil {
+		_, err = io.Copy(&b, lzmaDec)
+		if err == nil {
+			return Lzma, b.Bytes(), nil
+		}
+	}
+	log.Error().Err(err).Msgf("Lz4 extraction failed")
+
+	// LZMA
 
 	// Lz77 (a)
 	expanded, err = lz77a.Decompress(data)
@@ -205,6 +221,16 @@ func CompressFromReader(method string, r io.Reader) ([]byte, error) {
 		compressed := lz77b.Compress(data)
 		b.Write(compressed)
 
+	case "lzma":
+		w, err := lzma.NewWriter(&b)
+		if err != nil {
+			return nil, err
+		}
+		_, err = io.Copy(w, r)
+		if err != nil {
+			return nil, err
+		}
+		w.Close()
 	case "lzo1x":
 		data, err := io.ReadAll(r)
 		if err != nil {

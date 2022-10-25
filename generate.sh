@@ -6,6 +6,8 @@ go run cmd/compressionid-packer/main.go -m zlib samples/input.txt -o samples/enc
 
 go run cmd/compressionid-packer/main.go -m lz4 samples/input.txt -o samples/encoded.lz4
 
+go run cmd/compressionid-packer/main.go -m lzma samples/input.txt -o samples/encoded.lzma
+
 go run cmd/compressionid-packer/main.go -m lz77a samples/input.txt -o samples/encoded.lz77a
 go run cmd/compressionid-packer/main.go -m lz77b samples/input.txt -o samples/encoded.lz77b
 
