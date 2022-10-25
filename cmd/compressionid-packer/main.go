@@ -9,6 +9,7 @@ import (
 	"compress/zlib"
 
 	"github.com/alecthomas/kong"
+	"github.com/pierrec/lz4/v4"
 	"github.com/rs/zerolog/log"
 
 	"github.com/martinlindhe/compressionid"
@@ -50,6 +51,14 @@ func main() {
 
 	case "zlib":
 		w := zlib.NewWriter(&b)
+		_, err = io.Copy(w, r)
+		if err != nil {
+			panic(err)
+		}
+		w.Close()
+
+	case "lz4":
+		w := lz4.NewWriter(&b)
 		_, err = io.Copy(w, r)
 		if err != nil {
 			panic(err)

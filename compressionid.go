@@ -69,9 +69,9 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 	}
 
 	// FLATE
-	reader = flate.NewReader(bytes.NewReader(data))
-	defer reader.Close()
-	_, err = io.Copy(&b, reader)
+	flateDec := flate.NewReader(bytes.NewReader(data))
+	defer flateDec.Close()
+	_, err = io.Copy(&b, flateDec)
 	if err == nil {
 		return Flate, b.Bytes(), nil
 	}
@@ -86,18 +86,17 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 	log.Error().Err(err).Msgf("LZO extraction failed")
 
 	// LZ4
-	expanded = make([]byte, 1024*1024) // XXX have a "known" expanded size value ready from format parsing
-	n, err := lz4.UncompressBlock(data, expanded)
+	lz4Dec := lz4.NewReader(bytes.NewReader(data))
+	_, err = io.Copy(&b, lz4Dec)
 	if err == nil {
-		log.Info().Msgf("Detected LZ4 compression")
-		return LZ4, expanded[0:n], nil
+		return LZ4, b.Bytes(), nil
 	}
 	log.Error().Err(err).Msgf("LZ4 extraction failed")
 
 	// LZW
-	dec := lzw.NewReader(bytes.NewReader(data), lzw.LSB, 8)
+	lzwDec := lzw.NewReader(bytes.NewReader(data), lzw.LSB, 8)
 	output := make([]byte, 1024*1024) // XXX have a "known" expanded size value ready from format parsing
-	count, err := dec.Read(output)
+	count, err := lzwDec.Read(output)
 	if err == nil {
 		fmt.Println("read", count, "bytes")
 		fmt.Printf("output: %#v\n", string(output[:count]))
