@@ -80,7 +80,6 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 	// LZO1X
 	expanded, err := lzo.Decompress1X(bytes.NewReader(data), 0, 0)
 	if err == nil {
-		log.Info().Msgf("Detected LZO1X compression")
 		return LZO1X, expanded, nil
 	}
 	log.Error().Err(err).Msgf("LZO extraction failed")
@@ -100,7 +99,6 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 	if err == nil {
 		fmt.Println("read", count, "bytes")
 		fmt.Printf("output: %#v\n", string(output[:count]))
-		log.Info().Msgf("Detected LZW compression")
 		return LZW_LSB8, output[:count], nil
 	}
 	log.Error().Err(err).Msgf("LZW extraction failed")

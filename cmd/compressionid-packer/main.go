@@ -3,10 +3,13 @@ package main
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"compress/flate"
 	"compress/zlib"
+
+	"github.com/rasky/go-lzo"
 
 	"github.com/alecthomas/kong"
 	"github.com/pierrec/lz4/v4"
@@ -64,6 +67,13 @@ func main() {
 			panic(err)
 		}
 		w.Close()
+
+	case "lzo1x":
+		data, err := ioutil.ReadAll(r)
+		if err != nil {
+			panic(err)
+		}
+		b.Write(lzo.Compress1X(data))
 
 	default:
 		log.Error().Msgf("Unrecognized compression method '%s'", args.Method)

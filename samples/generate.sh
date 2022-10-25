@@ -8,8 +8,7 @@ go run cmd/compressionid-packer/main.go -m flate samples/input.txt -o samples/en
 # lz4 samples/input.txt samples/encoded.lz4
 go run cmd/compressionid-packer/main.go -m lz4 samples/input.txt -o samples/encoded.lz4
 
-# XXX generate LZO1X
-
+go run cmd/compressionid-packer/main.go -m lzo1x samples/input.txt -o samples/encoded.lzo1x
 
 # XXX generate LZW (LSB, 8-bit)
 
