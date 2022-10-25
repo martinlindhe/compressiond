@@ -28,6 +28,7 @@ const (
 	LZO1X
 	LZ4
 	LZW_LSB8 // LSB, 8-bit
+	LZW_MSB8 // MSB, 8-bit
 )
 
 func (k CompressionKind) String() string {
@@ -41,7 +42,9 @@ func (k CompressionKind) String() string {
 	case LZ4:
 		return "LZ4"
 	case LZW_LSB8:
-		return "LZW-LSB-8"
+		return "LZW, LSB, 8 bit"
+	case LZW_MSB8:
+		return "LZW, MSB, 8 bit"
 	default:
 		panic(k)
 	}
@@ -92,16 +95,39 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 	}
 	log.Error().Err(err).Msgf("LZ4 extraction failed")
 
-	// LZW
+	// LZW-LSB-8
 	lzwDec := lzw.NewReader(bytes.NewReader(data), lzw.LSB, 8)
-	output := make([]byte, 1024*1024) // XXX have a "known" expanded size value ready from format parsing
+	output := make([]byte, 1024*1024)
 	count, err := lzwDec.Read(output)
 	if err == nil {
-		fmt.Println("read", count, "bytes")
-		fmt.Printf("output: %#v\n", string(output[:count]))
-		return LZW_LSB8, output[:count], nil
+		pct := (float64(count) / float64(len(data))) * 100
+		if pct < 50 {
+			// we maybe had some error
+			log.Warn().Msgf("LZW-LSB-8 extracted %d of %d bytes (%.0f%%)", count, len(data), pct)
+
+			fmt.Printf("output: %#v\n", string(output[:count]))
+		} else {
+			return LZW_LSB8, output[:count], nil
+		}
 	}
-	log.Error().Err(err).Msgf("LZW extraction failed")
+	log.Error().Err(err).Msgf("LZW-LSB-8 extraction failed")
+
+	// LZW-MSB-8
+	lzwDec = lzw.NewReader(bytes.NewReader(data), lzw.MSB, 8)
+	output = make([]byte, 1024*1024)
+	count, err = lzwDec.Read(output)
+	if err == nil {
+		pct := (float64(count) / float64(len(data))) * 100
+		if pct < 50 {
+			// we maybe had some error
+			log.Warn().Msgf("LZW-MSB-8 extracted %d of %d bytes (%.0f%%)", count, len(data), pct)
+
+			fmt.Printf("output: %#v\n", string(output[:count]))
+		} else {
+			return LZW_MSB8, output[:count], nil
+		}
+	}
+	log.Error().Err(err).Msgf("LZW-MSB-8 extraction failed")
 
 	// lzfse  - used by apple in xcode?
 

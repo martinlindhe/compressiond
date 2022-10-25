@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"compress/flate"
+	"compress/lzw"
 	"compress/zlib"
 
 	"github.com/rasky/go-lzo"
@@ -74,6 +75,22 @@ func main() {
 			panic(err)
 		}
 		b.Write(lzo.Compress1X(data))
+
+	case "lzw-lsb8":
+		w := lzw.NewWriter(&b, lzw.LSB, 8)
+		_, err = io.Copy(w, r)
+		if err != nil {
+			panic(err)
+		}
+		w.Close()
+
+	case "lzw-msb8":
+		w := lzw.NewWriter(&b, lzw.MSB, 8)
+		_, err = io.Copy(w, r)
+		if err != nil {
+			panic(err)
+		}
+		w.Close()
 
 	default:
 		log.Error().Msgf("Unrecognized compression method '%s'", args.Method)
