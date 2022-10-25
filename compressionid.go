@@ -9,11 +9,13 @@ import (
 	"io"
 	"os"
 
-	lz77 "github.com/owencmiller/LZ77"
 	"github.com/pierrec/lz4/v4"
 	"github.com/rasky/go-lzo"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	lz77b "github.com/owencmiller/LZ77"
+	lz77a "github.com/writingtoole/pdb/lz77"
 )
 
 func InitLogging() {
@@ -28,7 +30,8 @@ const (
 	Flate
 	Lzo1X
 	Lz4
-	Lz77
+	Lz77a    // Lz77, variant #a
+	Lz77b    // Lz77, variant #b
 	Lzw_LSB8 // LSB, 8-bit
 	Lzw_MSB8 // MSB, 8-bit
 )
@@ -43,8 +46,10 @@ func (k CompressionKind) String() string {
 		return "Lzo1x"
 	case Lz4:
 		return "Lz4"
-	case Lz77:
-		return "Lz77"
+	case Lz77a:
+		return "Lz77 (a)"
+	case Lz77b:
+		return "Lz77 (b)"
 	case Lzw_LSB8:
 		return "Lzw, LSB, 8 bit"
 	case Lzw_MSB8:
@@ -99,12 +104,19 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 	}
 	log.Error().Err(err).Msgf("Lz4 extraction failed")
 
-	// Lz77
-	expanded, err = lz77.Decompress(data)
+	// Lz77 (a)
+	expanded, err = lz77a.Decompress(data)
 	if err == nil {
-		return Lz77, expanded, nil
+		return Lz77a, expanded, nil
 	}
-	log.Error().Err(err).Msgf("Lz77 extraction failed")
+	log.Error().Err(err).Msgf("Lz77 (a) extraction failed")
+
+	// Lz77 (b)
+	expanded, err = lz77b.Decompress(data)
+	if err == nil {
+		return Lz77b, expanded, nil
+	}
+	log.Error().Err(err).Msgf("Lz77 (b) extraction failed")
 
 	// LZW-LSB-8
 	lzwDec := lzw.NewReader(bytes.NewReader(data), lzw.LSB, 8)
@@ -174,12 +186,24 @@ func CompressFromReader(method string, r io.Reader) ([]byte, error) {
 		}
 		w.Close()
 
-	case "lz77":
+	case "lz77a":
 		data, err := io.ReadAll(r)
 		if err != nil {
 			return nil, err
 		}
-		b.Write(lz77.Compress(data))
+		compressed, err := lz77a.Compress(data)
+		if err != nil {
+			return nil, err
+		}
+		b.Write(compressed)
+
+	case "lz77b":
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		compressed := lz77b.Compress(data)
+		b.Write(compressed)
 
 	case "lzo1x":
 		data, err := io.ReadAll(r)

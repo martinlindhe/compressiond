@@ -11,7 +11,7 @@ import (
 
 var args struct {
 	Filename string `kong:"arg" name:"filename" type:"existingfile" help:"Input file."`
-	Method   string `help:"Compression method." enum:"flate,zlib,lz4,lz77,lzo1x,lzw-lsb8,lzw-msb8" short:"m" required:""`
+	Method   string `help:"Compression method." enum:"flate,zlib,lz4,lz77a,lz77b,lzo1x,lzw-lsb8,lzw-msb8" short:"m" required:""`
 	OutFile  string `help:"Write compressed data to file." short:"o" required:""`
 }
 
