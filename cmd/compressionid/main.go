@@ -15,7 +15,6 @@ var args struct {
 }
 
 func main() {
-
 	compressionid.InitLogging()
 
 	_ = kong.Parse(&args,

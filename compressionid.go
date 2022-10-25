@@ -142,3 +142,68 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 
 	return 0, nil, fmt.Errorf("no compression recognized")
 }
+
+func CompressFromReader(method string, r io.Reader) ([]byte, error) {
+	var b bytes.Buffer
+
+	switch method {
+	case "flate":
+		w, err := flate.NewWriter(&b, flate.DefaultCompression)
+		if err != nil {
+			return nil, err
+		}
+		_, err = io.Copy(w, r)
+		if err != nil {
+			return nil, err
+		}
+		w.Close()
+
+	case "zlib":
+		w := zlib.NewWriter(&b)
+		_, err := io.Copy(w, r)
+		if err != nil {
+			return nil, err
+		}
+		w.Close()
+
+	case "lz4":
+		w := lz4.NewWriter(&b)
+		_, err := io.Copy(w, r)
+		if err != nil {
+			return nil, err
+		}
+		w.Close()
+
+	case "lz77":
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		b.Write(lz77.Compress(data))
+
+	case "lzo1x":
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		b.Write(lzo.Compress1X(data))
+
+	case "lzw-lsb8":
+		w := lzw.NewWriter(&b, lzw.LSB, 8)
+		_, err := io.Copy(w, r)
+		if err != nil {
+			return nil, err
+		}
+		w.Close()
+
+	case "lzw-msb8":
+		w := lzw.NewWriter(&b, lzw.MSB, 8)
+		_, err := io.Copy(w, r)
+		if err != nil {
+			return nil, err
+		}
+		w.Close()
+	}
+
+	return b.Bytes(), nil
+}

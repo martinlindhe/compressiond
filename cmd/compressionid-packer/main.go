@@ -1,20 +1,9 @@
 package main
 
 import (
-	"bytes"
-	"io"
-	"io/ioutil"
 	"os"
 
-	"compress/flate"
-	"compress/lzw"
-	"compress/zlib"
-
-	lz77 "github.com/owencmiller/LZ77"
-	"github.com/rasky/go-lzo"
-
 	"github.com/alecthomas/kong"
-	"github.com/pierrec/lz4/v4"
 	"github.com/rs/zerolog/log"
 
 	"github.com/martinlindhe/compressionid"
@@ -27,7 +16,6 @@ var args struct {
 }
 
 func main() {
-
 	compressionid.InitLogging()
 
 	_ = kong.Parse(&args,
@@ -36,72 +24,18 @@ func main() {
 
 	r, err := os.Open(args.Filename)
 	if err != nil {
-		panic(err)
+		log.Error().Err(err).Msgf("Failed to open file")
+		return
 	}
 	defer r.Close()
 
-	var b bytes.Buffer
-
-	switch args.Method {
-	case "flate":
-		w, err := flate.NewWriter(&b, flate.DefaultCompression)
-		if err != nil {
-			panic(err)
-		}
-		_, err = io.Copy(w, r)
-		if err != nil {
-			panic(err)
-		}
-		w.Close()
-
-	case "zlib":
-		w := zlib.NewWriter(&b)
-		_, err = io.Copy(w, r)
-		if err != nil {
-			panic(err)
-		}
-		w.Close()
-
-	case "lz4":
-		w := lz4.NewWriter(&b)
-		_, err = io.Copy(w, r)
-		if err != nil {
-			panic(err)
-		}
-		w.Close()
-
-	case "lz77":
-		data, err := ioutil.ReadAll(r)
-		if err != nil {
-			panic(err)
-		}
-		b.Write(lz77.Compress(data))
-
-	case "lzo1x":
-		data, err := ioutil.ReadAll(r)
-		if err != nil {
-			panic(err)
-		}
-		b.Write(lzo.Compress1X(data))
-
-	case "lzw-lsb8":
-		w := lzw.NewWriter(&b, lzw.LSB, 8)
-		_, err = io.Copy(w, r)
-		if err != nil {
-			panic(err)
-		}
-		w.Close()
-
-	case "lzw-msb8":
-		w := lzw.NewWriter(&b, lzw.MSB, 8)
-		_, err = io.Copy(w, r)
-		if err != nil {
-			panic(err)
-		}
-		w.Close()
+	b, err := compressionid.CompressFromReader(args.Method, r)
+	if err != nil {
+		log.Error().Err(err).Msgf("Failed to compress data")
+		return
 	}
 
-	err = os.WriteFile(args.OutFile, b.Bytes(), 0644)
+	err = os.WriteFile(args.OutFile, b, 0644)
 	if err != nil {
 		log.Error().Err(err).Msgf("Failed to write to %s", args.OutFile)
 	}

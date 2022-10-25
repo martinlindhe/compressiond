@@ -10,11 +10,11 @@ builds:
       - darwin
       - windows
     goarch:
-      - 386
+      - "386"
       - amd64
     ignore:
       - goos: darwin
-        goarch: 386
+        goarch: "386"
 
   - id: compressionid-packer
     main: ./cmd/compressionid-packer
@@ -24,11 +24,11 @@ builds:
       - darwin
       - windows
     goarch:
-      - 386
+      - "386"
       - amd64
     ignore:
       - goos: darwin
-        goarch: 386
+        goarch: "386"
 
 archives:
   - id: all
