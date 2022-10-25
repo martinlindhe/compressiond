@@ -9,6 +9,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/fbonhomm/LZSS/source"
+	lzss "github.com/fbonhomm/LZSS/source"
 	"github.com/pierrec/lz4/v4"
 	"github.com/rasky/go-lzo"
 	"github.com/rs/zerolog"
@@ -27,9 +29,11 @@ func InitLogging() {
 type CompressionKind int
 
 const (
-	ZLib CompressionKind = iota
-	Flate
+	ZLib  CompressionKind = iota
+	Flate                 // (de)FLATE compression
 	Lzma
+	Lzma2
+	Lzss
 	Lzo1X
 	Lz4
 	Lz77a    // Lz77, variant #a
@@ -46,6 +50,10 @@ func (k CompressionKind) String() string {
 		return "Flate"
 	case Lzma:
 		return "Lzma"
+	case Lzma2:
+		return "Lzma2"
+	case Lzss:
+		return "Lzss"
 	case Lzo1X:
 		return "Lzo1x"
 	case Lz4:
@@ -116,9 +124,25 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 			return Lzma, b.Bytes(), nil
 		}
 	}
-	log.Error().Err(err).Msgf("Lz4 extraction failed")
+	log.Error().Err(err).Msgf("Lzma extraction failed")
 
-	// LZMA
+	// LZMA2
+	lzma2Dec, err := lzma.NewReader2(bytes.NewReader(data))
+	if err == nil {
+		_, err = io.Copy(&b, lzma2Dec)
+		if err == nil {
+			return Lzma2, b.Bytes(), nil
+		}
+	}
+	log.Error().Err(err).Msgf("Lzma2 extraction failed")
+
+	// LZSS
+	lzssMode0 := source.LZSS{}
+	expanded, err = lzssMode0.Decompress(data)
+	if err == nil {
+		return Lzss, expanded, nil
+	}
+	log.Error().Err(err).Msgf("Lzss extraction failed")
 
 	// Lz77 (a)
 	expanded, err = lz77a.Decompress(data)
@@ -231,6 +255,26 @@ func CompressFromReader(method string, r io.Reader) ([]byte, error) {
 			return nil, err
 		}
 		w.Close()
+
+	case "lzma2":
+		w, err := lzma.NewWriter2(&b)
+		if err != nil {
+			return nil, err
+		}
+		_, err = io.Copy(w, r)
+		if err != nil {
+			return nil, err
+		}
+		w.Close()
+
+	case "lzss":
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		LzssMode0 := lzss.LZSS{}
+		b.Write(LzssMode0.Compress(data))
+
 	case "lzo1x":
 		data, err := io.ReadAll(r)
 		if err != nil {
