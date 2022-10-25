@@ -1,9 +1,8 @@
 # cargo install lzfoo
 lzfoo -encode -i input.txt -o encoded.lzfse
 
-# XXX generate zlib file
+go run cmd/compressionid-packer/main.go -m zlib samples/input.txt -o samples/encoded.zlib
 
-# XXX generate DEFLATE. need custom writer it seems (or gzip file minus headers)
 go run cmd/compressionid-packer/main.go -m flate samples/input.txt -o samples/encoded.flate
 
 

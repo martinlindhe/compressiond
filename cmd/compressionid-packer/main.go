@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"compress/flate"
+	"compress/zlib"
 
 	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog/log"
@@ -41,6 +42,14 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		_, err = io.Copy(w, r)
+		if err != nil {
+			panic(err)
+		}
+		w.Close()
+
+	case "zlib":
+		w := zlib.NewWriter(&b)
 		_, err = io.Copy(w, r)
 		if err != nil {
 			panic(err)
