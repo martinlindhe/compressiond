@@ -7,6 +7,8 @@ go run cmd/compressionid-packer/main.go -m flate samples/input.txt -o samples/en
 
 go run cmd/compressionid-packer/main.go -m lz4 samples/input.txt -o samples/encoded.lz4
 
+go run cmd/compressionid-packer/main.go -m lz77 samples/input.txt -o samples/encoded.lz77
+
 go run cmd/compressionid-packer/main.go -m lzo1x samples/input.txt -o samples/encoded.lzo1x
 
 go run cmd/compressionid-packer/main.go -m lzw-lsb8 samples/input.txt -o samples/encoded.lzw-lsb8

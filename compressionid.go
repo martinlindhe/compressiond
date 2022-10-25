@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 
+	lz77 "github.com/owencmiller/LZ77"
 	"github.com/pierrec/lz4/v4"
 	"github.com/rasky/go-lzo"
 	"github.com/rs/zerolog"
@@ -25,10 +26,11 @@ type CompressionKind int
 const (
 	ZLib CompressionKind = iota
 	Flate
-	LZO1X
-	LZ4
-	LZW_LSB8 // LSB, 8-bit
-	LZW_MSB8 // MSB, 8-bit
+	Lzo1X
+	Lz4
+	Lz77
+	Lzw_LSB8 // LSB, 8-bit
+	Lzw_MSB8 // MSB, 8-bit
 )
 
 func (k CompressionKind) String() string {
@@ -37,14 +39,16 @@ func (k CompressionKind) String() string {
 		return "ZLib"
 	case Flate:
 		return "Flate"
-	case LZO1X:
-		return "LZO1x"
-	case LZ4:
-		return "LZ4"
-	case LZW_LSB8:
-		return "LZW, LSB, 8 bit"
-	case LZW_MSB8:
-		return "LZW, MSB, 8 bit"
+	case Lzo1X:
+		return "Lzo1x"
+	case Lz4:
+		return "Lz4"
+	case Lz77:
+		return "Lz77"
+	case Lzw_LSB8:
+		return "Lzw, LSB, 8 bit"
+	case Lzw_MSB8:
+		return "Lzw, MSB, 8 bit"
 	default:
 		panic(k)
 	}
@@ -78,22 +82,29 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 	if err == nil {
 		return Flate, b.Bytes(), nil
 	}
-	log.Error().Err(err).Msgf("DEFLATE extraction failed")
+	log.Error().Err(err).Msgf("FLATE extraction failed")
 
 	// LZO1X
 	expanded, err := lzo.Decompress1X(bytes.NewReader(data), 0, 0)
 	if err == nil {
-		return LZO1X, expanded, nil
+		return Lzo1X, expanded, nil
 	}
-	log.Error().Err(err).Msgf("LZO extraction failed")
+	log.Error().Err(err).Msgf("Lzo extraction failed")
 
 	// LZ4
 	lz4Dec := lz4.NewReader(bytes.NewReader(data))
 	_, err = io.Copy(&b, lz4Dec)
 	if err == nil {
-		return LZ4, b.Bytes(), nil
+		return Lz4, b.Bytes(), nil
 	}
-	log.Error().Err(err).Msgf("LZ4 extraction failed")
+	log.Error().Err(err).Msgf("Lz4 extraction failed")
+
+	// Lz77
+	expanded, err = lz77.Decompress(data)
+	if err == nil {
+		return Lz77, expanded, nil
+	}
+	log.Error().Err(err).Msgf("Lz77 extraction failed")
 
 	// LZW-LSB-8
 	lzwDec := lzw.NewReader(bytes.NewReader(data), lzw.LSB, 8)
@@ -107,7 +118,7 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 
 			fmt.Printf("output: %#v\n", string(output[:count]))
 		} else {
-			return LZW_LSB8, output[:count], nil
+			return Lzw_LSB8, output[:count], nil
 		}
 	}
 	log.Error().Err(err).Msgf("LZW-LSB-8 extraction failed")
@@ -124,12 +135,10 @@ func TryExtract(r io.Reader) (CompressionKind, []byte, error) {
 
 			fmt.Printf("output: %#v\n", string(output[:count]))
 		} else {
-			return LZW_MSB8, output[:count], nil
+			return Lzw_MSB8, output[:count], nil
 		}
 	}
 	log.Error().Err(err).Msgf("LZW-MSB-8 extraction failed")
-
-	// lzfse  - used by apple in xcode?
 
 	return 0, nil, fmt.Errorf("no compression recognized")
 }

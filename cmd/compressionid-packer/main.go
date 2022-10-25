@@ -10,6 +10,7 @@ import (
 	"compress/lzw"
 	"compress/zlib"
 
+	lz77 "github.com/owencmiller/LZ77"
 	"github.com/rasky/go-lzo"
 
 	"github.com/alecthomas/kong"
@@ -21,7 +22,7 @@ import (
 
 var args struct {
 	Filename string `kong:"arg" name:"filename" type:"existingfile" help:"Input file."`
-	Method   string `help:"Compression method." enum:"flate,zlib,lz4,lzo1x,lzw-lsb8,lzw-msb8" short:"m" required:""`
+	Method   string `help:"Compression method." enum:"flate,zlib,lz4,lz77,lzo1x,lzw-lsb8,lzw-msb8" short:"m" required:""`
 	OutFile  string `help:"Write compressed data to file." short:"o" required:""`
 }
 
@@ -68,6 +69,13 @@ func main() {
 			panic(err)
 		}
 		w.Close()
+
+	case "lz77":
+		data, err := ioutil.ReadAll(r)
+		if err != nil {
+			panic(err)
+		}
+		b.Write(lz77.Compress(data))
 
 	case "lzo1x":
 		data, err := ioutil.ReadAll(r)
