@@ -11,6 +11,7 @@ import (
 
 var args struct {
 	Filename string `kong:"arg" name:"filename" type:"existingfile" help:"Input file."`
+	Offset   int64  `help:"Starting offset (default 0)."`
 	OutFile  string `help:"Write extracted data to file." short:"o"`
 }
 
@@ -24,6 +25,10 @@ func main() {
 	f, err := os.Open(args.Filename)
 	if err != nil {
 		panic(err)
+	}
+
+	if args.Offset != 0 {
+		f.Seek(args.Offset, os.SEEK_SET)
 	}
 
 	kind, v, err := compressionid.TryExtract(f)
